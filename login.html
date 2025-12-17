@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Bawi</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles/main.css">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="login-box">
+            <div class="login-header">
+                <div class="logo">
+                    <i class="fas fa-comment-dots"></i>
+                    <h1>Bawi</h1>
+                </div>
+                <h2>Welcome Back</h2>
+                <p>Sign in to your account</p>
+            </div>
+
+            <div class="login-options form">
+                <h3 class="login-title">Sign in to continue</h3>
+            
+              
+                <button id="googleLogin" class="btn btn-google">
+                    <i class="fab fa-google"></i>
+                    <span>Continue with Google</span>
+                </button>
+                <div class="login-footer">
+                    <p class="footer-text">
+                        By continuing, you agree to our <a href="terms.html">Terms</a> and <a href="privacy.html">Privacy Policy</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyDvtVF6RAfE-7U1QgVVDRYbPu88GjRUj0Y",
+            authDomain: "bawi-bf40d.firebaseapp.com",
+            databaseURL: "https://bawi-bf40d-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "bawi-bf40d",
+            storageBucket: "bawi-bf40d.firebasestorage.app",
+            messagingSenderId: "1072802727193",
+            appId: "1:1072802727193:web:d6c2957f2c856e3f22b188",
+            measurementId: "G-ET5662LLH3"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const analytics = firebase.analytics();
+
+        // Helper functions for showing messages
+        function showMessage(message, isError = false) {
+            // Remove any existing message
+            const existingMsg = document.querySelector('.toast-notification');
+            if (existingMsg) existingMsg.remove();
+            
+            // Create new message element
+            const msgElement = document.createElement('div');
+            msgElement.className = `toast-notification ${isError ? 'toast-error' : 'toast-success'}`;
+            msgElement.innerHTML = message;
+            
+            document.body.appendChild(msgElement);
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                msgElement.style.opacity = '0';
+                setTimeout(() => msgElement.remove(), 500);
+            }, 5000);
+        }
+        
+        function showError(message) {
+            showMessage(message, true);
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            const googleLoginBtn = document.getElementById('googleLogin');
+            
+            // Google login button handler
+            if (googleLoginBtn) {
+                googleLoginBtn.addEventListener('click', function() {
+                    // Show loading state
+                    const originalBtnText = googleLoginBtn.innerHTML;
+                    googleLoginBtn.disabled = true;
+                    googleLoginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connecting to Google...';
+                    
+                    try {
+                        // Show message for Google auth
+                        showMessage('Connecting to Google...', false);
+                        
+                        // Set up Google Auth Provider
+                        const provider = new firebase.auth.GoogleAuthProvider();
+                        provider.addScope('profile');
+                        provider.addScope('email');
+                        
+                        // Sign in with Google popup
+                        firebase.auth().signInWithPopup(provider)
+                            .then((result) => {
+                                // This gives you a Google Access Token
+                                const credential = result.credential;
+                                const token = credential.accessToken;
+                                // The signed-in user info
+                                const user = result.user;
+                                
+                                console.log('Google sign-in successful:', user.email);
+                                showMessage('Sign-in successful! Redirecting...');
+                                
+                                // Send the Firebase user data to your backend
+                                return fetch('/api/firebase-auth', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        email: user.email,
+                                        uid: user.uid,
+                                        displayName: user.displayName,
+                                        photoURL: user.photoURL
+                                    })
+                                });
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.redirectUrl) {
+                                    window.location.href = data.redirectUrl;
+                                } else {
+                                    window.location.href = '/dashboard';
+                                }
+                            })
+                            .catch((error) => {
+                                // Handle Errors here
+                                const errorCode = error.code;
+                                const errorMessage = error.message;
+                                // The email of the user's account used
+                                const email = error.email;
+                                // The firebase.auth.AuthCredential type that was used
+                                const credential = error.credential;
+                                
+                                console.error('Google sign-in error:', errorCode, errorMessage);
+                                showError('Failed to sign in with Google: ' + errorMessage);
+                                
+                                // Reset button
+                                googleLoginBtn.disabled = false;
+                                googleLoginBtn.innerHTML = originalBtnText;
+                            });
+                        
+                    } catch (error) {
+                        showError('Failed to connect with Google. Please try again.');
+                        console.error('Google login error:', error);
+                        // Reset button
+                        googleLoginBtn.disabled = false;
+                        googleLoginBtn.innerHTML = originalBtnText;
+                    }
+                });
+            }
+            
+            // Login form handler
+            if (loginForm) {
+                loginForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    
+                    const email = document.getElementById('email').value.trim();
+                    const password = document.getElementById('password').value;
+                    
+                    // Validate email
+                    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                        showError('Please enter a valid email address');
+                        return;
+                    }
+                    
+                    // Validate password
+                    if (!password) {
+                        showError('Please enter your password');
+                        return;
+                    }
+                    
+                    const submitBtn = loginForm.querySelector('button[type="submit"]');
+                    const originalBtnText = submitBtn.innerHTML;
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in...';
+                    
+                    try {
+                        // Send login request to backend API
+                        const response = await fetch('/api/login', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ email, password })
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (!response.ok) {
+                            throw new Error(data.error || 'Failed to sign in');
+                        }
+                        
+                        showMessage('Login successful!', false);
+                        
+                        // Redirect to appropriate page based on profile completion
+                        setTimeout(() => {
+                            window.location.href = data.redirectUrl || '/dashboard';
+                        }, 1500);
+                        
+                    } catch (error) {
+                        showError(error.message || 'Failed to sign in. Please try again.');
+                        console.error('Login error:', error);
+                    } finally {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalBtnText;
+                    }
+                });
+            }
+            
+            // Add animation styles
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes fadeIn {
+                    from { opacity: 0; transform: translateY(-10px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                
+                @keyframes fadeOut {
+                    to { opacity: 0; transform: translateY(-10px); }
+                }
+                
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+                
+                .fa-spinner {
+                    animation: spin 1s linear infinite;
+                }
+            `;
+            document.head.appendChild(style);
+        });
+    </script>
+</body>
+</html>

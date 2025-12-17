@@ -1,0 +1,1375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Bawi</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        :root {
+            --primary: #ec4899;
+            --primary-dark: #db2777;
+            --secondary: #8b5cf6;
+            --bg: #0f172a;
+            --bg-light: #1e293b;
+            --bg-lighter: #334155;
+            --text: #f8fafc;
+            --text-light: #94a3b8;
+            --border: #334155;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+            min-height: 100vh;
+        }
+
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+        }
+
+        .logo i {
+            font-size: 1.5rem;
+            color: var(--primary);
+        }
+
+        .logo h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0;
+            color: var(--text);
+            letter-spacing: -0.025em;
+        }
+
+        .user-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border-radius: 0.5rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            gap: 0.5rem;
+            text-decoration: none;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .profile-card {
+            background: var(--bg-light);
+            border-radius: 1rem;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            border: 1px solid var(--border);
+            margin-bottom: 2rem;
+        }
+
+        .profile-header {
+            padding: 2rem;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .profile-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 70% 30%, rgba(255,255,255,0.1) 0%, transparent 50%);
+        }
+
+        .profile-pic {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 3px solid white;
+            object-fit: cover;
+            position: relative;
+            z-index: 1;
+            background-color: var(--bg-light);
+        }
+
+        .profile-pic-placeholder {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 3px solid white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--bg-light);
+            position: relative;
+            z-index: 1;
+        }
+
+        .profile-pic-placeholder i {
+            font-size: 2.5rem;
+            color: var(--text-light);
+        }
+        
+        .profile-pic-edit {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            background: var(--primary);
+            color: white;
+            border: 2px solid white;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            z-index: 2;
+        }
+        
+        .profile-pic-edit:hover {
+            transform: scale(1.1);
+        }
+        
+        .profile-pic-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        .profile-info {
+            position: relative;
+            z-index: 1;
+            color: white;
+        }
+
+        .profile-info h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .profile-info p {
+            font-size: 0.9375rem;
+            opacity: 0.9;
+        }
+
+        .profile-details {
+            padding: 2rem;
+        }
+
+        .profile-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .profile-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .profile-section h3 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            color: var(--text-light);
+        }
+
+        .profile-section p {
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+
+        .profile-meta {
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .meta-item i {
+            color: var(--primary);
+            font-size: 1.125rem;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: var(--bg-light);
+            border-radius: 1rem;
+            box-shadow: var(--shadow);
+            width: 90%;
+            max-width: 500px;
+            border: 1px solid var(--border);
+            animation: modalFadeIn 0.3s;
+        }
+
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 1.25rem;
+            color: var(--text);
+        }
+
+        .close-modal {
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-light);
+            transition: color 0.2s;
+        }
+
+        .close-modal:hover {
+            color: var(--primary);
+        }
+
+        #editProfileForm {
+            padding: 1.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1001;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.3s, transform 0.3s;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .toast-success {
+            background-color: rgba(34, 197, 94, 0.9);
+            color: white;
+        }
+
+        .toast-error {
+            background-color: rgba(239, 68, 68, 0.9);
+            color: white;
+        }
+
+        .toast-info {
+            background-color: rgba(59, 130, 246, 0.9);
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-container {
+                padding: 1rem;
+            }
+            
+            .profile-header {
+                flex-direction: column;
+                text-align: center;
+                padding: 1.5rem;
+            }
+            
+            .profile-meta {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+
+            .user-actions {
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+
+            .btn {
+                font-size: 0.75rem;
+                padding: 0.4rem 0.75rem;
+            }
+
+            .danger-zone-content {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+
+            .danger-warning {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .btn-danger {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        /* Blocked Users Section */
+        .blocked-users-section {
+            margin-top: 2rem;
+        }
+        
+        .blocked-users-list {
+            display: grid;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .blocked-user-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: var(--bg-lighter);
+            border-radius: 0.75rem;
+            border: 1px solid var(--border);
+        }
+        
+        .blocked-user-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--bg-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .blocked-user-avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        
+        .blocked-user-avatar i {
+            font-size: 1.5rem;
+            color: var(--text-light);
+        }
+        
+        .blocked-user-info {
+            flex: 1;
+        }
+        
+        .blocked-user-name {
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 0.25rem;
+        }
+        
+        .blocked-user-date {
+            font-size: 0.875rem;
+            color: var(--text-light);
+        }
+        
+        .unblock-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+        
+        .unblock-btn:hover {
+            background: #dc2626;
+            transform: translateY(-1px);
+        }
+        
+        .no-blocked-users {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-light);
+            font-style: italic;
+        }
+        
+        /* Form Controls */
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text);
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 0.875rem;
+            transition: border-color 0.2s;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        .form-control::placeholder {
+            color: var(--text-light);
+        }
+        
+        /* Notifications Section */
+        .notifications-section {
+            margin-top: 2rem;
+        }
+        
+        .notifications-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-light);
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            border-radius: 0.5rem 0.5rem 0 0;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .tab-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .tab-btn:hover:not(.active) {
+            background: var(--bg-lighter);
+            color: var(--text);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .notifications-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .notification-item {
+            background: var(--bg-lighter);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            border: 1px solid var(--border);
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        
+        .notification-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        .notification-item.unread {
+            border-left: 4px solid var(--primary);
+            background: var(--bg-light);
+        }
+        
+        .notification-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.5rem;
+        }
+        
+        .notification-title {
+            font-weight: 600;
+            color: var(--text);
+            margin: 0;
+        }
+        
+        .notification-type {
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .notification-type.info {
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+        }
+        
+        .notification-type.warning {
+            background: rgba(245, 158, 11, 0.2);
+            color: #fbbf24;
+        }
+        
+        .notification-type.success {
+            background: rgba(34, 197, 94, 0.2);
+            color: #4ade80;
+        }
+        
+        .notification-type.error {
+            background: rgba(239, 68, 68, 0.2);
+            color: #f87171;
+        }
+        
+        .notification-message {
+            color: var(--text-light);
+            line-height: 1.5;
+            margin-bottom: 0.5rem;
+        }
+        
+        .notification-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.875rem;
+            color: var(--text-light);
+        }
+        
+        .notification-date {
+            font-style: italic;
+        }
+        
+        .mark-read-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .mark-read-btn:hover {
+            background: var(--primary-dark);
+        }
+        
+        .no-notifications {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-light);
+            font-style: italic;
+        }
+
+        /* Delete Account Section */
+        .delete-account-section {
+            margin-top: 2rem;
+        }
+        
+        .danger-zone-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: var(--bg-lighter);
+            border-radius: 0.75rem;
+            border: 1px solid var(--border);
+        }
+        
+        .danger-warning {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .danger-warning i {
+            font-size: 1.5rem;
+            color: var(--primary);
+        }
+        
+        .warning-text {
+            flex: 1;
+        }
+        
+        .danger-warning h4 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .warning-text p {
+            margin: 0;
+            font-size: 0.9375rem;
+            color: var(--text-light);
+        }
+        
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+        
+        .btn-danger:hover {
+            background: #dc2626;
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="dashboard-header">
+            <a href="/" class="logo">
+                <i class="fas fa-comment-dots"></i>
+                <h1>Bawi</h1>
+            </a>
+            <div class="user-actions">
+                <button id="editProfileBtn" class="btn btn-outline">
+                    <i class="fas fa-user-edit"></i>
+                    Edit Profile
+                </button>
+                <a href="/room" class="btn btn-outline">
+                    <i class="fas fa-comments"></i>
+                    Go to Room
+                </a>
+                <a href="/logout" class="btn btn-outline">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Logout
+                </a>
+            </div>
+        </header>
+        
+        <main>
+            <div class="profile-card">
+                <div class="profile-header">
+                    <div class="profile-pic-container">
+                        <% if (user.profilePicture) { %>
+                            <img src="/<%= user.profilePicture %>" alt="Profile Picture" class="profile-pic">
+                        <% } else { %>
+                            <div class="profile-pic-placeholder">
+                                <i class="fas fa-user"></i>
+                            </div>
+                        <% } %>
+                        <div class="profile-pic-edit" onclick="document.getElementById('profilePictureInput').click()">
+                            <i class="fas fa-camera"></i>
+                        </div>
+                    </div>
+                    <div class="profile-info">
+                        <h2><%= user.username %></h2>
+                        <p><%= user.email %></p>
+                    </div>
+                </div>
+                
+                <div class="profile-details">
+                    <div class="profile-section">
+                        <h3>About Me</h3>
+                        <p><%= user.bio || 'No bio provided.' %></p>
+                    </div>
+                    
+                    <div class="profile-section">
+                        <h3>Personal Information</h3>
+                        <div class="profile-meta">
+                            <div class="meta-item">
+                                <i class="fas fa-user"></i>
+                                <span>Gender: <%= user.gender ? user.gender.charAt(0).toUpperCase() + user.gender.slice(1) : 'Not specified' %></span>
+                            </div>
+                            <div class="meta-item">
+                                <i class="fas fa-birthday-cake"></i>
+                                <span>Age: <%= user.age || 'Not specified' %></span>
+                            </div>
+                            <div class="meta-item">
+                                <i class="fas fa-calendar"></i>
+                                <span>Joined: <%= new Date(user.createdAt).toLocaleDateString() %></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="profile-section blocked-users-section">
+                        <h3>Blocked Users</h3>
+                        <div class="blocked-users-list">
+                            <% if (blockedUsers && blockedUsers.length > 0) { %>
+                                <% blockedUsers.forEach(function(blockedUser) { %>
+                                    <div class="blocked-user-item" data-user-id="<%= blockedUser.id %>">
+                                        <div class="blocked-user-avatar">
+                                            <% if (blockedUser.profilePicture) { %>
+                                                <img src="/<%= blockedUser.profilePicture %>" alt="<%= blockedUser.username %>">
+                                            <% } else { %>
+                                                <i class="fas fa-user"></i>
+                                            <% } %>
+                                        </div>
+                                        <div class="blocked-user-info">
+                                            <div class="blocked-user-name"><%= blockedUser.username %></div>
+                                            <div class="blocked-user-date">Blocked on <%= new Date(blockedUser.blockedAt).toLocaleDateString() %></div>
+                                        </div>
+                                        <button class="unblock-btn" onclick="unblockUser('<%= blockedUser.id %>')">
+                                            <i class="fas fa-user-plus"></i>
+                                            Unblock
+                                        </button>
+                                    </div>
+                                <% }); %>
+                            <% } else { %>
+                                <div class="no-blocked-users">
+                                    <i class="fas fa-users" style="font-size: 2rem; margin-bottom: 1rem; display: block;"></i>
+                                    <p>You haven't blocked any users yet.</p>
+                                </div>
+                            <% } %>
+                        </div>
+                    </div>
+
+                    <!-- Notifications Section -->
+                    <div class="profile-section notifications-section">
+                        <h3>Notifications</h3>
+                        <div class="notifications-tabs">
+                            <button class="tab-btn active" data-tab="announcements">
+                                <i class="fas fa-bullhorn"></i>
+                                Announcements
+                            </button>
+                            <button class="tab-btn" data-tab="broadcasts">
+                                <i class="fas fa-broadcast-tower"></i>
+                                Broadcasts
+                            </button>
+                        </div>
+                        
+                        <div class="notifications-content">
+                            <div id="announcements-tab" class="tab-content active">
+                                <div id="announcements-list" class="notifications-list">
+                                    <!-- Announcements will be loaded here -->
+                                </div>
+                            </div>
+                            
+                            <div id="broadcasts-tab" class="tab-content">
+                                <div id="broadcasts-list" class="notifications-list">
+                                    <!-- Broadcasts will be loaded here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Delete Account Section -->
+                    <div class="profile-section delete-account-section">
+                        <h3>Danger Zone</h3>
+                        <div class="danger-zone-content">
+                            <div class="danger-warning">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <div class="warning-text">
+                                    <h4>Delete Account</h4>
+                                    <p>This action cannot be undone. All your data, messages, and profile information will be permanently deleted.</p>
+                                </div>
+                            </div>
+                            <button id="deleteAccountBtn" class="btn btn-danger">
+                                <i class="fas fa-trash-alt"></i>
+                                Delete Account
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Hidden file input for profile picture -->
+    <input type="file" id="profilePictureInput" accept="image/*" style="display: none;">
+
+    <!-- Edit Profile Modal -->
+    <div id="editProfileModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Profile</h3>
+                <span class="close-modal">&times;</span>
+            </div>
+            <form id="editProfileForm">
+                <div class="form-group">
+                    <label for="editUsername">Username</label>
+                    <input type="text" id="editUsername" name="username" class="form-control" value="<%= user.username %>" required>
+                </div>
+                <div class="form-group">
+                    <label for="editBio">Bio</label>
+                    <textarea id="editBio" name="bio" class="form-control" rows="4"><%= user.bio || '' %></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i>
+                    Save Changes
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Account Confirmation Modal -->
+    <div id="deleteAccountModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Confirm Account Deletion</h3>
+                <span class="close-modal" onclick="closeDeleteModal()">&times;</span>
+            </div>
+            <div style="padding: 1.5rem;">
+                <div class="danger-warning" style="margin-bottom: 1.5rem;">
+                    <i class="fas fa-exclamation-triangle" style="color: #ef4444; font-size: 2rem;"></i>
+                    <div class="warning-text">
+                        <h4 style="color: #ef4444; margin-bottom: 0.5rem;">Are you absolutely sure?</h4>
+                        <p>This action will permanently delete your account and all associated data including:</p>
+                        <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
+                            <li>Your profile information</li>
+                            <li>All your messages and chat history</li>
+                            <li>Uploaded files and media</li>
+                            <li>Account settings and preferences</li>
+                        </ul>
+                        <p style="margin-top: 1rem; font-weight: 600;">This action cannot be undone.</p>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                    <button onclick="closeDeleteModal()" class="btn btn-outline">
+                        Cancel
+                    </button>
+                    <button onclick="confirmDeleteAccount()" class="btn btn-danger">
+                        <i class="fas fa-trash-alt"></i>
+                        Yes, Delete My Account
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Modal functionality
+        const modal = document.getElementById('editProfileModal');
+        const editProfileBtn = document.getElementById('editProfileBtn');
+        const closeModal = document.querySelector('.close-modal');
+        
+        editProfileBtn.addEventListener('click', () => {
+            modal.style.display = 'flex';
+        });
+        
+        closeModal.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+        
+        window.addEventListener('click', (event) => {
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+        
+        // Profile picture upload functionality
+        const profilePictureInput = document.getElementById('profilePictureInput');
+        
+        profilePictureInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            // Check file type
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+            if (!allowedTypes.includes(file.type)) {
+                showMessage('Invalid file type. Only JPEG, PNG, and GIF are allowed.', 'error');
+                return;
+            }
+            
+            // Check file size (max 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                showMessage('File too large. Maximum size is 5MB.', 'error');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('profilePicture', file);
+            
+            try {
+                const response = await fetch('/api/update-profile-picture', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Update the profile picture in the UI
+                    const profilePicContainer = document.querySelector('.profile-pic-container');
+                    profilePicContainer.innerHTML = `
+                        <img src="/${data.profilePicture}" alt="Profile Picture" class="profile-pic">
+                        <div class="profile-pic-edit" onclick="document.getElementById('profilePictureInput').click()">
+                            <i class="fas fa-camera"></i>
+                        </div>
+                    `;
+                    
+                    showMessage('Profile picture updated successfully!', 'success');
+                } else {
+                    showMessage(data.error || 'Failed to update profile picture', 'error');
+                }
+            } catch (error) {
+                showMessage('An error occurred. Please try again.', 'error');
+                console.error('Error:', error);
+            }
+            
+            // Reset the input
+            profilePictureInput.value = '';
+        });
+        
+        // Form submission
+        const editProfileForm = document.getElementById('editProfileForm');
+        
+        editProfileForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(editProfileForm);
+            const username = formData.get('username');
+            const bio = formData.get('bio');
+            
+            try {
+                const response = await fetch('/api/update-profile', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, bio })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Update the UI without refreshing
+                    document.querySelector('.profile-info h2').textContent = username;
+                    document.querySelector('.profile-section p').textContent = bio || 'No bio provided.';
+                    modal.style.display = 'none';
+                    
+                    // Show success message
+                    showMessage('Profile updated successfully!', 'success');
+                } else {
+                    showMessage(data.error || 'Failed to update profile', 'error');
+                }
+            } catch (error) {
+                showMessage('An error occurred. Please try again.', 'error');
+                console.error('Error:', error);
+            }
+        });
+        
+        // Fetch and render blocked users
+        async function loadBlockedUsers() {
+            try {
+                const response = await fetch('/api/blocked-users');
+                const data = await response.json();
+                const blockedUsersList = document.querySelector('.blocked-users-list');
+                if (data.success && data.blockedUsers.length > 0) {
+                    blockedUsersList.innerHTML = data.blockedUsers.map(blockedUser => `
+                        <div class="blocked-user-item" data-user-id="${blockedUser.id}">
+                            <div class="blocked-user-avatar">
+                                ${blockedUser.profilePicture ? `<img src="/${blockedUser.profilePicture}" alt="${blockedUser.username}">` : `<i class='fas fa-user'></i>`}
+                            </div>
+                            <div class="blocked-user-info">
+                                <div class="blocked-user-name">${blockedUser.username}</div>
+                                <div class="blocked-user-date">Blocked on ${new Date(blockedUser.blockedAt).toLocaleDateString()}</div>
+                            </div>
+                            <button class="unblock-btn" onclick="unblockUser('${blockedUser.id}')">
+                                <i class="fas fa-user-plus"></i> Unblock
+                            </button>
+                        </div>
+                    `).join('');
+                } else {
+                    blockedUsersList.innerHTML = `
+                        <div class="no-blocked-users">
+                            <i class="fas fa-users" style="font-size: 2rem; margin-bottom: 1rem; display: block;"></i>
+                            <p>You haven't blocked any users yet.</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading blocked users:', error);
+            }
+        }
+
+        // Update unblockUser to reload the list
+        async function unblockUser(userId) {
+            try {
+                const response = await fetch('/api/unblock-user', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ blockedUserId: userId })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    showMessage('User unblocked successfully!', 'success');
+                    loadBlockedUsers();
+                } else {
+                    showMessage(data.error || 'Failed to unblock user', 'error');
+                }
+            } catch (error) {
+                showMessage('An error occurred. Please try again.', 'error');
+                console.error('Error:', error);
+            }
+        }
+
+        // Load blocked users on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            loadBlockedUsers();
+        });
+        
+        // Toast message function
+        function showMessage(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `<div class="toast-content">${message}</div>`;
+            
+            document.body.appendChild(toast);
+            
+            // Animate in
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 10);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    document.body.removeChild(toast);
+                }, 300);
+            }, 3000);
+        }
+
+        // Notifications functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load notifications on page load
+            loadNotifications();
+            
+            // Setup tab switching
+            const tabBtns = document.querySelectorAll('.tab-btn');
+            tabBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tab = btn.getAttribute('data-tab');
+                    switchTab(tab);
+                });
+            });
+
+            // Setup socket connection for real-time notifications
+            setupSocketConnection();
+        });
+
+        function switchTab(tabName) {
+            // Update active tab button
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+            
+            // Update active tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+            
+            // Load content for the selected tab
+            if (tabName === 'announcements') {
+                loadAnnouncements();
+            } else if (tabName === 'broadcasts') {
+                loadBroadcasts();
+            }
+        }
+
+        async function loadNotifications() {
+            await Promise.all([
+                loadAnnouncements(),
+                loadBroadcasts()
+            ]);
+        }
+
+        async function loadAnnouncements() {
+            try {
+                console.log('Loading announcements...'); // DEBUG
+                const response = await fetch('/api/user/announcements', {
+                    credentials: 'include'
+                });
+                console.log('Announcements response status:', response.status); // DEBUG
+                const data = await response.json();
+                console.log('Announcements API response:', data); // DEBUG
+                
+                const announcementsList = document.getElementById('announcements-list');
+                
+                if (data.success && data.announcements.length > 0) {
+                    announcementsList.innerHTML = data.announcements.map(announcement => `
+                        <div class="notification-item ${!announcement.read ? 'unread' : ''}" onclick="markAnnouncementRead('${announcement._id}')">
+                            <div class="notification-header">
+                                <h4 class="notification-title">${announcement.title}</h4>
+                                <span class="notification-type ${announcement.type}">${announcement.type}</span>
+                            </div>
+                            <p class="notification-message">${announcement.message}</p>
+                            <div class="notification-meta">
+                                <span class="notification-date">${new Date(announcement.createdAt).toLocaleDateString()}</span>
+                                ${!announcement.read ? '<button class="mark-read-btn" onclick="event.stopPropagation(); markAnnouncementRead(\'' + announcement._id + '\')">Mark Read</button>' : ''}
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    announcementsList.innerHTML = `
+                        <div class="no-notifications">
+                            <i class="fas fa-bullhorn" style="font-size: 2rem; margin-bottom: 1rem; display: block;"></i>
+                            <p>No announcements yet.</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading announcements:', error);
+            }
+        }
+
+        async function loadBroadcasts() {
+            try {
+                console.log('Loading broadcasts...'); // DEBUG
+                const response = await fetch('/api/user/broadcasts', {
+                    credentials: 'include'
+                });
+                console.log('Broadcasts response status:', response.status); // DEBUG
+                const data = await response.json();
+                console.log('Broadcasts API response:', data); // DEBUG
+                
+                const broadcastsList = document.getElementById('broadcasts-list');
+                
+                if (data.success && data.broadcasts.length > 0) {
+                    broadcastsList.innerHTML = data.broadcasts.map(broadcast => `
+                        <div class="notification-item ${!broadcast.read ? 'unread' : ''}" onclick="markBroadcastRead('${broadcast._id}')">
+                            <div class="notification-header">
+                                <h4 class="notification-title">Broadcast Message</h4>
+                                <span class="notification-type ${broadcast.type}">${broadcast.type}</span>
+                            </div>
+                            <p class="notification-message">${broadcast.message}</p>
+                            <div class="notification-meta">
+                                <span class="notification-date">${new Date(broadcast.createdAt).toLocaleDateString()}</span>
+                                ${!broadcast.read ? '<button class="mark-read-btn" onclick="event.stopPropagation(); markBroadcastRead(\'' + broadcast._id + '\')">Mark Read</button>' : ''}
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    broadcastsList.innerHTML = `
+                        <div class="no-notifications">
+                            <i class="fas fa-broadcast-tower" style="font-size: 2rem; margin-bottom: 1rem; display: block;"></i>
+                            <p>No broadcast messages yet.</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading broadcasts:', error);
+            }
+        }
+
+        async function markAnnouncementRead(announcementId) {
+            try {
+                const response = await fetch(`/api/user/announcements/${announcementId}/read`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    // Update the UI to show as read
+                    const notificationItem = document.querySelector(`[onclick*="${announcementId}"]`);
+                    if (notificationItem) {
+                        notificationItem.classList.remove('unread');
+                        const markReadBtn = notificationItem.querySelector('.mark-read-btn');
+                        if (markReadBtn) {
+                            markReadBtn.remove();
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error marking announcement as read:', error);
+            }
+        }
+
+        async function markBroadcastRead(broadcastId) {
+            try {
+                const response = await fetch(`/api/user/broadcasts/${broadcastId}/read`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    // Update the UI to show as read
+                    const notificationItem = document.querySelector(`[onclick*="${broadcastId}"]`);
+                    if (notificationItem) {
+                        notificationItem.classList.remove('unread');
+                        const markReadBtn = notificationItem.querySelector('.mark-read-btn');
+                        if (markReadBtn) {
+                            markReadBtn.remove();
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error marking broadcast as read:', error);
+            }
+        }
+
+        // Socket connection for real-time notifications
+        function setupSocketConnection() {
+            const socket = io();
+            
+            // Authenticate the socket connection with the current user
+            const currentUserId = '<%= user._id %>';
+            if (currentUserId) {
+                socket.emit('authenticate', currentUserId);
+            }
+            
+            // Listen for announcements
+            socket.on('announcement', (data) => {
+                console.log('Received announcement:', data);
+                showMessage(`New announcement: ${data.title}`, 'info');
+                // Reload announcements to show the new one
+                loadAnnouncements();
+            });
+            
+            // Listen for broadcast messages
+            socket.on('broadcast-message', (data) => {
+                console.log('Received broadcast:', data);
+                showMessage(`New broadcast: ${data.message}`, 'info');
+                // Reload broadcasts to show the new one
+                loadBroadcasts();
+            });
+            
+            // Listen for authentication response
+            socket.on('authenticated', (data) => {
+                console.log('Socket authenticated:', data);
+            });
+        }
+
+        // Delete Account functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add delete account button event listener
+            const deleteAccountBtn = document.getElementById('deleteAccountBtn');
+            if (deleteAccountBtn) {
+                deleteAccountBtn.addEventListener('click', showDeleteModal);
+            }
+        });
+
+        function showDeleteModal() {
+            const deleteModal = document.getElementById('deleteAccountModal');
+            deleteModal.style.display = 'flex';
+        }
+
+        function closeDeleteModal() {
+            const deleteModal = document.getElementById('deleteAccountModal');
+            deleteModal.style.display = 'none';
+        }
+
+        async function confirmDeleteAccount() {
+            try {
+                const response = await fetch('/api/delete-account', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showMessage('Account deleted successfully. Redirecting to home page...', 'success');
+                    // Redirect to home page after a short delay
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 2000);
+                } else {
+                    showMessage(data.error || 'Failed to delete account', 'error');
+                }
+            } catch (error) {
+                console.error('Error deleting account:', error);
+                showMessage('An error occurred while deleting your account', 'error');
+            }
+        }
+
+        // Close delete modal when clicking outside
+        window.addEventListener('click', (event) => {
+            const deleteModal = document.getElementById('deleteAccountModal');
+            if (event.target === deleteModal) {
+                closeDeleteModal();
+            }
+        });
+    </script>
+</body>
+</html>

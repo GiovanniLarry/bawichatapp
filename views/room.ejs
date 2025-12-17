@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Room - Bawi</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles/main.css">
+    <style>
+        :root {
+            --primary: #ec4899;
+            --primary-dark: #db2777;
+            --secondary: #8b5cf6;
+            --bg: #0f172a;
+            --bg-light: #1e293b;
+            --bg-lighter: #334155;
+            --text: #f8fafc;
+            --text-light: #94a3b8;
+            --border: #334155;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .room-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+
+        .room-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 1rem;
+        }
+
+        .logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+        }
+
+        .logo i {
+            font-size: 1.5rem;
+            color: var(--primary);
+        }
+
+        .logo h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0;
+            color: var(--text);
+            letter-spacing: -0.025em;
+        }
+
+        .user-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border-radius: 0.5rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            gap: 0.5rem;
+            text-decoration: none;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .chat-area {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            background: var(--bg-light);
+            border-radius: 1rem;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        .chat-messages {
+            flex-grow: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            min-height: 300px;
+            max-height: calc(100vh - 250px);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .message {
+            display: flex;
+            gap: 0.75rem;
+            max-width: 80%;
+        }
+
+        .message.outgoing {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--bg-lighter);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .message-avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .message-avatar i {
+            font-size: 1.25rem;
+            color: var(--text-light);
+        }
+
+        .message-content {
+            background: var(--bg-lighter);
+            padding: 0.75rem 1rem;
+            border-radius: 1rem;
+            border-top-left-radius: 0;
+        }
+
+        .message.outgoing .message-content {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 1rem;
+            border-top-right-radius: 0;
+        }
+
+        .message-sender {
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+            color: var(--text-light);
+        }
+
+        .message.outgoing .message-sender {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .message-text {
+            font-size: 0.9375rem;
+        }
+
+        .chat-input {
+            display: flex;
+            padding: 1rem;
+            border-top: 1px solid var(--border);
+            gap: 0.75rem;
+        }
+
+        .chat-input input {
+            flex-grow: 1;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 0.9375rem;
+        }
+
+        .chat-input input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+        }
+
+        .room-options {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .room-option {
+            flex: 1;
+            background: var(--bg-light);
+            border-radius: 1rem;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            border: 1px solid var(--border);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .room-option:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px -2px rgba(0, 0, 0, 0.4);
+        }
+
+        .room-option-header {
+            padding: 1.5rem;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            text-align: center;
+            position: relative;
+        }
+
+        .room-option-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 70% 30%, rgba(255,255,255,0.1) 0%, transparent 50%);
+        }
+
+        .room-option-header i {
+            font-size: 2rem;
+            color: white;
+            margin-bottom: 0.75rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .room-option-header h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: white;
+            margin: 0;
+            position: relative;
+            z-index: 1;
+        }
+
+        .room-option-body {
+            padding: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-light);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            font-size: 0.9375rem;
+            color: var(--text);
+            transition: all 0.2s ease;
+            background-color: var(--bg-lighter);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.25);
+        }
+
+        .room-id-display {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--bg);
+            padding: 0.75rem 1rem;
+            border-radius: 0.75rem;
+            margin-top: 1rem;
+            border: 1px dashed var(--border);
+        }
+
+        .room-id-display code {
+            flex-grow: 1;
+            font-family: monospace;
+            font-size: 0.9375rem;
+            color: var(--primary);
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .room-id-display button {
+            background: transparent;
+            border: none;
+            color: var(--text-light);
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 0.25rem;
+            transition: color 0.2s;
+        }
+
+        .room-id-display button:hover {
+            color: var(--primary);
+        }
+
+        .success-message {
+            color: #10b981;
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .error-message {
+            color: #ef4444;
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem;
+            text-align: center;
+            color: var(--text-light);
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-state p {
+            font-size: 0.875rem;
+            max-width: 400px;
+        }
+
+        /* Recent Rooms Styles */
+        .recent-rooms-section {
+            background: var(--bg-light);
+            border-radius: 1rem;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .recent-rooms-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+        }
+
+        .recent-rooms-header h3 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: white;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .recent-rooms-container {
+            padding: 1rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .recent-room-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            background: var(--bg);
+            margin-bottom: 0.5rem;
+            border: 1px solid var(--border);
+            transition: all 0.2s ease;
+        }
+
+        .recent-room-item:hover {
+            border-color: var(--primary);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .recent-room-info {
+            flex-grow: 1;
+            margin-right: 1rem;
+        }
+
+        .recent-room-name {
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 0.25rem;
+            font-size: 0.9375rem;
+        }
+
+        .recent-room-description {
+            font-size: 0.75rem;
+            color: var(--text-light);
+            margin-bottom: 0.25rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .recent-room-meta {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.6875rem;
+            color: var(--text-light);
+        }
+
+        .recent-room-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .recent-room-actions .btn-danger {
+            background-color: #dc3545;
+            border-color: #dc3545;
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .recent-room-actions .btn-danger:hover {
+            background-color: #c82333;
+            border-color: #bd2130;
+            transform: scale(1.05);
+        }
+
+        .recent-room-item.deleting {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        /* Notification Styles */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 1rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            z-index: 1000;
+            transform: translateX(100%);
+            opacity: 0;
+            transition: all 0.3s ease;
+            max-width: 300px;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .notification-success {
+            border-left: 4px solid #28a745;
+            color: #155724;
+        }
+
+        .notification-error {
+            border-left: 4px solid #dc3545;
+            color: #721c24;
+        }
+
+        .notification-info {
+            border-left: 4px solid #17a2b8;
+            color: #0c5460;
+        }
+
+        .notification i {
+            font-size: 1.2rem;
+        }
+
+        .btn-sm {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.75rem;
+        }
+
+        .loading-state {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 2rem;
+            color: var(--text-light);
+        }
+
+        .no-recent-rooms {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-light);
+        }
+
+        .no-recent-rooms i {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            opacity: 0.5;
+        }
+
+        @media (max-width: 768px) {
+            .room-header {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: flex-start;
+            }
+
+            .user-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .message {
+                max-width: 90%;
+            }
+
+            .room-options {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="room-container">
+        <header class="room-header">
+            <a href="/" class="logo">
+                <i class="fas fa-comment-dots"></i>
+                <h1>Bawi Chat Room</h1>
+            </a>
+            <div class="user-actions">
+                <a href="/dashboard" class="btn btn-outline">
+                    <i class="fas fa-user"></i>
+                    Dashboard
+                </a>
+                <a href="/logout" class="btn btn-outline">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Logout
+                </a>
+            </div>
+        </header>
+
+        <div class="room-options">
+            <!-- Create Room Option -->
+            <div class="room-option">
+                <div class="room-option-header">
+                    <i class="fas fa-plus-circle"></i>
+                    <h2>Create a Room</h2>
+                </div>
+                <div class="room-option-body">
+                    <form id="createRoomForm">
+                        <div class="form-group">
+                            <label for="roomName">Room Name</label>
+                            <input type="text" id="roomName" class="form-control" placeholder="Enter a name for your room" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="roomDescription">Room Description</label>
+                            <textarea id="roomDescription" class="form-control" rows="3" placeholder="Describe what your room is about"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%">
+                            <i class="fas fa-plus"></i>
+                            Create Room
+                        </button>
+                    </form>
+                    
+                    <div id="roomCreatedInfo" style="display: none;">
+                        <div class="success-message">
+                            <i class="fas fa-check-circle"></i>
+                            Room created successfully!
+                        </div>
+                        <div class="room-id-display">
+                            <code id="generatedRoomId">bawi-xxxxxxxx</code>
+                            <button id="copyRoomId" title="Copy Room ID">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                        <p class="success-message" id="copiedMessage" style="display: none;">
+                            <i class="fas fa-check"></i>
+                            Copied to clipboard!
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Join Room Option -->
+            <div class="room-option">
+                <div class="room-option-header">
+                    <i class="fas fa-sign-in-alt"></i>
+                    <h2>Join a Room</h2>
+                </div>
+                <div class="room-option-body">
+                    <form id="joinRoomForm">
+                        <div class="form-group">
+                            <label for="roomId">Room ID</label>
+                            <input type="text" id="roomId" class="form-control" placeholder="Enter room ID (e.g., bawi-12345678)" required>
+                        </div>
+                        <p class="error-message" id="joinRoomError" style="display: none;">
+                            <i class="fas fa-exclamation-circle"></i>
+                            <span id="errorText">Invalid room ID format</span>
+                        </p>
+                        <button type="submit" class="btn btn-primary" style="width: 100%">
+                            <i class="fas fa-sign-in-alt"></i>
+                            Join Room
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Rooms Section -->
+        <div class="recent-rooms-section" style="margin-bottom: 1.5rem;">
+            <div class="recent-rooms-header">
+                <h3><i class="fas fa-history"></i> Recent Rooms</h3>
+                <button id="refreshRecentRooms" class="btn btn-outline" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+            <div id="recentRoomsContainer" class="recent-rooms-container">
+                <div class="loading-state">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span>Loading recent rooms...</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- This section will be shown when a user enters a chat room -->
+        <div id="chatRoomContainer" style="display: none;">
+            <div class="chat-area">
+                <div class="chat-messages">
+                    <div class="empty-state">
+                        <i class="fas fa-comments"></i>
+                        <h3>No messages yet</h3>
+                        <p>Be the first to start the conversation! Send a message using the input field below.</p>
+                    </div>
+                    
+                    <!-- Messages will be displayed here when implemented -->
+                </div>
+                
+                <form class="chat-input" id="messageForm">
+                    <input 
+                        type="text" 
+                        id="messageInput" 
+                        placeholder="Type your message here..." 
+                        aria-label="Message input"
+                        required
+                    >
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane"></i>
+                        Send
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Create Room Form Handling
+        const createRoomForm = document.getElementById('createRoomForm');
+        const roomCreatedInfo = document.getElementById('roomCreatedInfo');
+        const generatedRoomId = document.getElementById('generatedRoomId');
+        const copyRoomId = document.getElementById('copyRoomId');
+        const copiedMessage = document.getElementById('copiedMessage');
+        
+        // Join Room Form Handling
+        const joinRoomForm = document.getElementById('joinRoomForm');
+        const roomIdInput = document.getElementById('roomId');
+        const joinRoomError = document.getElementById('joinRoomError');
+        const errorText = document.getElementById('errorText');
+        
+        // Chat Room Container
+        const chatRoomContainer = document.getElementById('chatRoomContainer');
+        const messageForm = document.getElementById('messageForm');
+        const messageInput = document.getElementById('messageInput');
+        const chatMessages = document.querySelector('.chat-messages');
+        
+        // Generate a unique room ID with prefix 'bawi-' and 8 random characters
+        function generateRoomId() {
+            const characters = 'abcdefghijklmnopqrstuvwxyz0123456789';
+            let result = 'bawi-';
+            for (let i = 0; i < 8; i++) {
+                result += characters.charAt(Math.floor(Math.random() * characters.length));
+            }
+            return result;
+        }
+        
+        // Create Room Form Submission
+        createRoomForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const roomName = document.getElementById('roomName').value.trim();
+            const roomDescription = document.getElementById('roomDescription').value.trim();
+            
+            if (!roomName) return;
+            
+            // Show loading state
+            const submitBtn = createRoomForm.querySelector('button[type="submit"]');
+            const originalBtnText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+            
+            // Send room data to server
+            fetch('/api/rooms', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    name: roomName,
+                    description: roomDescription
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show the room created info
+                    createRoomForm.style.display = 'none';
+                    roomCreatedInfo.style.display = 'block';
+                    generatedRoomId.textContent = data.room.id;
+                    
+                    // Add a button to enter the room
+                    const enterRoomBtn = document.createElement('button');
+                    enterRoomBtn.className = 'btn btn-primary';
+                    enterRoomBtn.style.width = '100%';
+                    enterRoomBtn.style.marginTop = '1rem';
+                    enterRoomBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Enter Room';
+                    enterRoomBtn.addEventListener('click', () => {
+                        window.location.href = `/chat/${data.room.id}`;
+                    });
+                    roomCreatedInfo.appendChild(enterRoomBtn);
+                } else {
+                    // Show error
+                    alert(data.error || 'Failed to create room');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnText;
+                }
+            })
+            .catch(error => {
+                console.error('Error creating room:', error);
+                alert('Failed to create room. Please try again.');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnText;
+            });
+        });
+        
+        // Copy Room ID to clipboard
+        copyRoomId.addEventListener('click', () => {
+            navigator.clipboard.writeText(generatedRoomId.textContent)
+                .then(() => {
+                    copiedMessage.style.display = 'flex';
+                    setTimeout(() => {
+                        copiedMessage.style.display = 'none';
+                    }, 2000);
+                })
+                .catch(err => {
+                    console.error('Failed to copy: ', err);
+                });
+        });
+        
+        // Join Room Form Submission
+        joinRoomForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const roomId = roomIdInput.value.trim();
+            
+            // Validate room ID format
+            if (!roomId.startsWith('bawi-') || roomId.length !== 13) {
+                joinRoomError.style.display = 'flex';
+                errorText.textContent = 'Invalid room ID format';
+                return;
+            }
+            
+            // Show loading state
+            const submitBtn = joinRoomForm.querySelector('button[type="submit"]');
+            const originalBtnText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Joining...';
+            
+            // Check if room exists on server
+            fetch(`/api/rooms/${roomId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Room exists, redirect to chat page
+                        window.location.href = `/chat/${roomId}`;
+                    } else {
+                        // Room not found
+                        joinRoomError.style.display = 'flex';
+                        errorText.textContent = 'Room not found';
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalBtnText;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking room:', error);
+                    joinRoomError.style.display = 'flex';
+                    errorText.textContent = 'Error checking room';
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnText;
+                });
+        });
+        
+        // Reset room ID input when it changes
+        roomIdInput.addEventListener('input', () => {
+            joinRoomError.style.display = 'none';
+        });
+        
+        // Recent Rooms Functionality
+        const recentRoomsContainer = document.getElementById('recentRoomsContainer');
+        const refreshRecentRooms = document.getElementById('refreshRecentRooms');
+        
+        // Load recent rooms
+        async function loadRecentRooms() {
+            try {
+                recentRoomsContainer.innerHTML = `
+                    <div class="loading-state">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <span>Loading recent rooms...</span>
+                    </div>
+                `;
+                
+                const response = await fetch('/api/recent-rooms');
+                const data = await response.json();
+                
+                if (data.success) {
+                    if (data.recentRooms.length === 0) {
+                        recentRoomsContainer.innerHTML = `
+                            <div class="no-recent-rooms">
+                                <i class="fas fa-inbox"></i>
+                                <h4>No recent rooms</h4>
+                                <p>Join some rooms to see them here!</p>
+                            </div>
+                        `;
+                    } else {
+                        recentRoomsContainer.innerHTML = data.recentRooms.map(room => `
+                            <div class="recent-room-item" data-room-id="${room.roomId}">
+                                <div class="recent-room-info">
+                                    <div class="recent-room-name">${room.name}</div>
+                                    <div class="recent-room-description">${room.description || 'No description'}</div>
+                                    <div class="recent-room-meta">
+                                        <span><i class="fas fa-clock"></i> ${formatTimeAgo(room.lastVisited)}</span>
+                                        <span><i class="fas fa-sign-in-alt"></i> ${room.visitCount} visit${room.visitCount > 1 ? 's' : ''}</span>
+                                    </div>
+                                </div>
+                                <div class="recent-room-actions">
+                                    <button class="btn btn-primary btn-sm" onclick="joinRecentRoom('${room.roomId}')">
+                                        <i class="fas fa-sign-in-alt"></i> Join
+                                    </button>
+                                    <button class="btn btn-danger btn-sm" onclick="deleteRecentRoom('${room.roomId}', this)">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                } else {
+                    recentRoomsContainer.innerHTML = `
+                        <div class="no-recent-rooms">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <h4>Error loading rooms</h4>
+                            <p>Please try refreshing the page.</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading recent rooms:', error);
+                recentRoomsContainer.innerHTML = `
+                    <div class="no-recent-rooms">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <h4>Error loading rooms</h4>
+                        <p>Please try refreshing the page.</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // Format time ago
+        function formatTimeAgo(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffInSeconds = Math.floor((now - date) / 1000);
+            
+            if (diffInSeconds < 60) {
+                return 'Just now';
+            } else if (diffInSeconds < 3600) {
+                const minutes = Math.floor(diffInSeconds / 60);
+                return `${minutes}m ago`;
+            } else if (diffInSeconds < 86400) {
+                const hours = Math.floor(diffInSeconds / 3600);
+                return `${hours}h ago`;
+            } else if (diffInSeconds < 2592000) {
+                const days = Math.floor(diffInSeconds / 86400);
+                return `${days}d ago`;
+            } else {
+                return date.toLocaleDateString();
+            }
+        }
+        
+        // Join recent room
+        function joinRecentRoom(roomId) {
+            window.location.href = `/chat/${roomId}`;
+        }
+
+        // Delete recent room
+        async function deleteRecentRoom(roomId, buttonElement) {
+            if (!confirm('Are you sure you want to remove this room from your recent rooms?')) {
+                return;
+            }
+
+            try {
+                // Add deleting state to the room item
+                const roomItem = buttonElement.closest('.recent-room-item');
+                roomItem.classList.add('deleting');
+
+                // Disable the button
+                buttonElement.disabled = true;
+                buttonElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+                const response = await fetch(`/api/recent-rooms/${roomId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Remove the room item from the UI
+                    roomItem.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                    roomItem.style.opacity = '0';
+                    roomItem.style.transform = 'translateX(-100%)';
+                    
+                    setTimeout(() => {
+                        roomItem.remove();
+                        
+                        // Check if no more rooms
+                        const remainingRooms = document.querySelectorAll('.recent-room-item');
+                        if (remainingRooms.length === 0) {
+                            recentRoomsContainer.innerHTML = `
+                                <div class="no-recent-rooms">
+                                    <i class="fas fa-inbox"></i>
+                                    <h4>No recent rooms</h4>
+                                    <p>Join some rooms to see them here!</p>
+                                </div>
+                            `;
+                        }
+                    }, 300);
+
+                    // Show success notification
+                    showNotification('Room removed from recent rooms', 'success');
+                } else {
+                    // Revert the button state
+                    buttonElement.disabled = false;
+                    buttonElement.innerHTML = '<i class="fas fa-trash"></i>';
+                    roomItem.classList.remove('deleting');
+                    
+                    showNotification(data.error || 'Failed to remove room', 'error');
+                }
+            } catch (error) {
+                console.error('Error deleting recent room:', error);
+                
+                // Revert the button state
+                buttonElement.disabled = false;
+                buttonElement.innerHTML = '<i class="fas fa-trash"></i>';
+                roomItem.classList.remove('deleting');
+                
+                showNotification('Error removing room', 'error');
+            }
+        }
+
+        // Show notification function
+        function showNotification(message, type = 'info') {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+                <span>${message}</span>
+            `;
+            
+            // Add to page
+            document.body.appendChild(notification);
+            
+            // Show notification
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 100);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    notification.remove();
+                }, 300);
+            }, 3000);
+        }
+        
+        // Refresh recent rooms
+        refreshRecentRooms.addEventListener('click', () => {
+            loadRecentRooms();
+        });
+        
+        // Load recent rooms on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadRecentRooms();
+        });
+        
+        // Basic chat message handling
+        messageForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const message = messageInput.value.trim();
+            if (!message) return;
+            
+            // Clear input
+            messageInput.value = '';
+            
+            // Remove empty state if present
+            const emptyState = document.querySelector('.empty-state');
+            if (emptyState) {
+                emptyState.remove();
+            }
+            
+            // Add message to UI (this is just a demo, not persistent)
+            const messageElement = document.createElement('div');
+            messageElement.className = 'message outgoing';
+            messageElement.innerHTML = `
+                <div class="message-content">
+                    <div class="message-sender">You</div>
+                    <div class="message-text">${message}</div>
+                </div>
+                <div class="message-avatar">
+                    <% if (user.profilePicture) { %>
+                        <img src="/<%= user.profilePicture %>" alt="Your avatar">
+                    <% } else { %>
+                        <i class="fas fa-user"></i>
+                    <% } %>
+                </div>
+            `;
+            
+            chatMessages.appendChild(messageElement);
+            
+            // Auto scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            // Simulate response (just for demo)
+            setTimeout(() => {
+                const responseElement = document.createElement('div');
+                responseElement.className = 'message';
+                responseElement.innerHTML = `
+                    <div class="message-avatar">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="message-content">
+                        <div class="message-sender">Bawi Bot</div>
+                        <div class="message-text">This is a demo chat. Real-time functionality will be implemented soon!</div>
+                    </div>
+                `;
+                
+                chatMessages.appendChild(responseElement);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

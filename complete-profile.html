@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Your Profile - Bawi</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles/main.css">
+
+
+
+</head>
+<body>
+    <div class="profile-container">
+        <div class="profile-box">
+            <div class="profile-header">
+                <a href="index.html" class="logo">
+                    <i class="fas fa-comment-dots"></i>
+                    <h1>Bawi</h1>
+                </a>
+                
+            </div>
+            <form id="profileForm" class="profile-form" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" class="form-control" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Profile Picture</label>
+                    <div class="profile-pic-container" id="profilePicContainer">
+                        <i class="fas fa-camera"></i>
+                        <p>Click to upload an image</p>
+                        <img id="profilePicPreview" class="profile-pic-preview" alt="Profile picture preview" title="Profile picture preview">
+                        <input type="file" id="profilePicture" name="profilePicture" accept="image/*" class="hidden-file-input" title="Upload profile picture" aria-label="Upload profile picture">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Gender</label>
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="male" name="gender" value="male" required>
+                            <label for="male">Male</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="female" name="gender" value="female">
+                            <label for="female">Female</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="age">Age</label>
+                    <input type="number" id="age" name="age" min="13" class="form-control" required>
+                    <small class="form-hint">You must be at least 13 years old</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="bio">Bio</label>
+                    <textarea id="bio" name="bio" class="form-control" placeholder="Tell us about yourself..."></textarea>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-check-circle"></i>
+                    Complete Profile
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user came from Google sign-in by checking URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('source') && urlParams.get('source') === 'google') {
+                const googleIndicator = document.getElementById('googleSignInIndicator');
+                if (googleIndicator) {
+                    googleIndicator.classList.remove('hidden');
+                }
+            }
+            
+            const profileForm = document.getElementById('profileForm');
+            const profilePicContainer = document.getElementById('profilePicContainer');
+            const profilePicInput = document.getElementById('profilePicture');
+            const profilePicPreview = document.getElementById('profilePicPreview');
+            const ageInput = document.getElementById('age');
+            
+            // Profile picture upload
+            profilePicContainer.addEventListener('click', function() {
+                profilePicInput.click();
+            });
+            
+            profilePicInput.addEventListener('change', function() {
+                if (this.files && this.files[0]) {
+                    const reader = new FileReader();
+                    
+                    reader.onload = function(e) {
+                        profilePicPreview.src = e.target.result;
+                        profilePicPreview.style.display = 'block';
+                    };
+                    
+                    reader.readAsDataURL(this.files[0]);
+                }
+            });
+            
+            // Age validation
+            ageInput.addEventListener('input', function() {
+                const age = parseInt(this.value);
+                if (age < 13) {
+                    this.setCustomValidity('You must be at least 13 years old');
+                } else {
+                    this.setCustomValidity('');
+                }
+            });
+            
+            // Form submission
+            profileForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                // Validate age
+                const age = parseInt(ageInput.value);
+                if (age < 13) {
+                    showError('You must be at least 13 years old');
+                    return;
+                }
+                
+                const submitBtn = profileForm.querySelector('button[type="submit"]');
+                const originalBtnText = submitBtn.innerHTML;
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving profile...';
+                
+                try {
+                    const formData = new FormData(profileForm);
+                    
+                    const response = await fetch('/api/complete-profile', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (!response.ok) {
+                        throw new Error(data.error || 'Failed to save profile');
+                    }
+                    
+                    showMessage('Profile saved successfully!', false);
+                    
+                    // Redirect to dashboard after a short delay
+                    setTimeout(() => {
+                        window.location.href = data.redirectUrl || '/dashboard';
+                    }, 1500);
+                    
+                } catch (error) {
+                    showError(error.message || 'Failed to save profile. Please try again.');
+                    console.error('Profile save error:', error);
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnText;
+                }
+            });
+            
+            // Helper function to show error messages
+            function showError(message) {
+                showMessage(message, true);
+            }
+            
+            // Helper function to show messages
+            function showMessage(message, isError = false) {
+                // Option 1: Toast notification (like login/signup pages)
+                const existingToast = document.querySelector('.toast-notification');
+                if (existingToast) existingToast.remove();
+                
+                const toastDiv = document.createElement('div');
+                toastDiv.className = `toast-notification ${isError ? 'toast-error' : 'toast-success'}`;
+                toastDiv.innerHTML = `
+                    <i class="fas ${isError ? 'fa-exclamation-circle' : 'fa-check-circle'} message-icon"></i>
+                    <span>${message}</span>
+                `;
+                
+                document.body.appendChild(toastDiv);
+                
+                // Auto-remove message after 5 seconds
+                setTimeout(() => {
+                    toastDiv.style.opacity = '0';
+                    setTimeout(() => toastDiv.remove(), 300);
+                }, 5000);
+            }
+        });
+    </script>
+</body>
+</html>
