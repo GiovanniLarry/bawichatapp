@@ -4748,6 +4748,19 @@ app.use('/api/*', (req, res) => {
   res.status(404).json({ error: 'Route not found', method: req.method, url: req.url });
 });
 
+// Health check route
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    message: 'Serverless function is working',
+    timestamp: new Date().toISOString(),
+    env: {
+      hasMongoUri: !!process.env.MONGODB_URI,
+      hasJwtSecret: !!process.env.JWT_SECRET
+    }
+  });
+});
+
 // Export for Vercel serverless deployment
 module.exports = app;
 
@@ -4772,12 +4785,18 @@ const initializeDatabase = async () => {
 
 // Add database initialization middleware
 app.use(async (req, res, next) => {
-  if (!isDbConnected) {
-    try {
+  try {
+    if (!isDbConnected) {
+      console.log('Initializing database connection...');
+      if (!process.env.MONGODB_URI) {
+        console.error('MONGODB_URI environment variable not set');
+        return res.status(500).json({ error: 'Database configuration missing' });
+      }
       await initializeDatabase();
-    } catch (error) {
-      return res.status(500).json({ error: 'Database connection failed' });
     }
+    next();
+  } catch (error) {
+    console.error('Database initialization error:', error);
+    return res.status(500).json({ error: 'Database connection failed', details: error.message });
   }
-  next();
 });
