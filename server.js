@@ -4751,24 +4751,33 @@ app.use('/api/*', (req, res) => {
 // Export for Vercel serverless deployment
 module.exports = app;
 
-// Initialize database connection and setup (but don't start server)
-const initializeApp = async () => {
-  try {
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/chat-app');
-    console.log('MongoDB connected');
-    
-    // Create default admin account
-    await createDefaultAdmin();
-    
-    // Start cron job for auto-unban
-    setInterval(autoUnbanExpired, 60 * 60 * 1000); // Check every hour
-    
-  } catch (error) {
-    console.error('Database connection error:', error);
+// Lazy database initialization for serverless
+let isDbConnected = false;
+const initializeDatabase = async () => {
+  if (!isDbConnected) {
+    try {
+      await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/chat-app');
+      console.log('MongoDB connected');
+      
+      // Create default admin account
+      await createDefaultAdmin();
+      
+      isDbConnected = true;
+    } catch (error) {
+      console.error('Database connection error:', error);
+      throw error;
+    }
   }
 };
 
-// Initialize app when deployed to serverless environment
-if (process.env.NODE_ENV !== 'development') {
-  initializeApp();
-}
+// Add database initialization middleware
+app.use(async (req, res, next) => {
+  if (!isDbConnected) {
+    try {
+      await initializeDatabase();
+    } catch (error) {
+      return res.status(500).json({ error: 'Database connection failed' });
+    }
+  }
+  next();
+});
