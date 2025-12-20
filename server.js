@@ -4748,10 +4748,11 @@ app.use('/api/*', (req, res) => {
   res.status(404).json({ error: 'Route not found', method: req.method, url: req.url });
 });
 
-// Start server (moved to end to ensure all routes are registered)
-server.listen(3000, async () => {
-  console.log(`Server running on port 3000`);
-  
+// Export for Vercel serverless deployment
+module.exports = app;
+
+// Initialize database connection and setup (but don't start server)
+const initializeApp = async () => {
   try {
     await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/chat-app');
     console.log('MongoDB connected');
@@ -4765,4 +4766,9 @@ server.listen(3000, async () => {
   } catch (error) {
     console.error('Database connection error:', error);
   }
-});
+};
+
+// Initialize app when deployed to serverless environment
+if (process.env.NODE_ENV !== 'development') {
+  initializeApp();
+}
