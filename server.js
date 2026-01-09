@@ -4800,3 +4800,12 @@ app.use(async (req, res, next) => {
     return res.status(500).json({ error: 'Database connection failed', details: error.message });
   }
 });
+
+// Start server for local development
+if (require.main === module) {
+  const PORT = process.env.PORT || 3000;
+  server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    console.log(`Health check available at http://localhost:${PORT}/health`);
+  });
+}
