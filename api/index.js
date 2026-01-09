@@ -14,6 +14,8 @@ app.use(express.urlencoded({ extended: true }));
 // Static files
 app.use('/styles', express.static(path.join(__dirname, '../styles')));
 app.use('/js', express.static(path.join(__dirname, '../js')));
+app.use('/public', express.static(path.join(__dirname, '../public')));
+app.use('/favicon.ico', express.static(path.join(__dirname, '../public/favicon.ico')));
 
 // Database connection
 let cachedDb = null;
