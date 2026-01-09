@@ -1,123 +1,52 @@
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
-const session = require('express-session');
-const MongoStore = require('connect-mongo');
 const bcrypt = require('bcryptjs');
-const path = require('path');
 const jwt = require('jsonwebtoken');
-const cookieParser = require('cookie-parser');
+const path = require('path');
 
 const app = express();
 
-// Middleware
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-app.use(cookieParser());
-
-// Session configuration for serverless
-app.use(session({
-  secret: process.env.JWT_SECRET || 'fallback-secret',
-  resave: false,
-  saveUninitialized: false,
-  store: MongoStore.create({
-    mongoUrl: process.env.MONGODB_URI,
-    ttl: 24 * 60 * 60 // 1 day
-  }),
-  cookie: {
-    secure: process.env.NODE_ENV === 'production',
-    httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000 // 1 day
-  }
-}));
+// Basic middleware
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true }));
 
 // Static files
 app.use('/styles', express.static(path.join(__dirname, '../styles')));
 app.use('/js', express.static(path.join(__dirname, '../js')));
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Database connection
-let isDbConnected = false;
+let cachedDb = null;
+
 const connectDB = async () => {
-  if (!isDbConnected) {
-    try {
-      await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/chat-app');
-      console.log('MongoDB connected');
-      isDbConnected = true;
-      await createDefaultAdmin();
-    } catch (error) {
-      console.error('Database connection error:', error);
-      throw error;
-    }
+  if (cachedDb) {
+    return cachedDb;
+  }
+
+  try {
+    const conn = await mongoose.connect(process.env.MONGODB_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    
+    cachedDb = conn;
+    console.log('MongoDB connected');
+    return conn;
+  } catch (error) {
+    console.error('Database connection error:', error);
+    throw error;
   }
 };
 
-// User Schema
+// Simple User Schema
 const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  profilePicture: String,
-  bio: String,
-  interests: [String],
-  location: String,
-  website: String,
-  isVerified: { type: Boolean, default: false },
-  verificationToken: String,
-  resetPasswordToken: String,
-  resetPasswordExpires: Date,
-  lastLogin: Date,
-  loginCount: { type: Number, default: 0 },
-  isActive: { type: Boolean, default: true },
-  role: { type: String, default: 'user', enum: ['user', 'admin', 'super_admin'] },
-  permissions: [{
-    type: String,
-    enum: ['manage_users', 'manage_reports', 'view_analytics', 'manage_rooms', 'ban_users']
-  }],
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now }
 });
 
-const User = mongoose.model('User', userSchema);
-
-// Authentication middleware
-const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-
-  if (!token) {
-    return res.status(401).json({ error: 'Access token required' });
-  }
-
-  jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret', (err, user) => {
-    if (err) {
-      return res.status(403).json({ error: 'Invalid token' });
-    }
-    req.user = user;
-    next();
-  });
-};
-
-// Create default admin
-const createDefaultAdmin = async () => {
-  try {
-    const existingAdmin = await User.findOne({ email: 'admin@bawi.com' });
-    if (!existingAdmin) {
-      const hashedPassword = await bcrypt.hash('admin123', 12);
-      const defaultAdmin = new User({
-        username: 'admin',
-        password: hashedPassword,
-        email: 'admin@bawi.com',
-        role: 'super_admin',
-        permissions: ['manage_users', 'manage_reports', 'view_analytics', 'manage_rooms', 'ban_users']
-      });
-      await defaultAdmin.save();
-      console.log('Default admin account created: admin / admin123');
-    }
-  } catch (error) {
-    console.error('Error creating default admin:', error);
-  }
-};
+const User = mongoose.models.User || mongoose.model('User', userSchema);
 
 // Routes
 app.get('/health', (req, res) => {
@@ -177,7 +106,7 @@ app.post('/api/register', async (req, res) => {
     });
   } catch (error) {
     console.error('Registration error:', error);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: 'Server error', details: error.message });
   }
 });
 
@@ -202,10 +131,6 @@ app.post('/api/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
     
-    user.lastLogin = new Date();
-    user.loginCount += 1;
-    await user.save();
-    
     const token = jwt.sign(
       { id: user._id, username: user.username },
       process.env.JWT_SECRET || 'fallback-secret',
@@ -218,14 +143,12 @@ app.post('/api/login', async (req, res) => {
       user: {
         id: user._id,
         username: user.username,
-        email: user.email,
-        profilePicture: user.profilePicture,
-        role: user.role
+        email: user.email
       }
     });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: 'Server error', details: error.message });
   }
 });
 
@@ -257,6 +180,14 @@ app.use('*', (req, res) => {
 
 // Export for serverless
 module.exports = async (req, res) => {
-  await connectDB();
-  app(req, res);
+  try {
+    await connectDB();
+    app(req, res);
+  } catch (error) {
+    console.error('Serverless function error:', error);
+    res.status(500).json({ 
+      error: 'Internal Server Error',
+      details: error.message 
+    });
+  }
 };
